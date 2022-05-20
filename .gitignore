@@ -10,14 +10,17 @@
 *.so
 *.dylib
 
-# Dependency directories
-/vendor/
-
 # Test binary, built with `go test -c`
 *.test
 
 # Output of the go coverage tool
 *.out
+
+# Workspace
+go.work*
+
+# Dependency directories
+/vendor/
 
 .local/
 local.*
