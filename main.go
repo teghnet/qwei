@@ -81,12 +81,12 @@ func main() {
 	ctx := context.Background()
 	ctx = ethereum.WithChainID(ctx, ethereum.MainnetChainID)
 
-	acc, err := ethereum.NewPrivateKeyAccount(vars.EthKeys[4])
+	sourceAccount, err := ethereum.NewPrivateKeyAccount(vars.EthKeys[4])
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	ctx = ethereum.WithAccount(ctx, acc)
+	ctx = ethereum.WithAccount(ctx, sourceAccount)
 
 	client := provider.NewAlchemy(vars.AlchemyKeys)
 	defer func() {
