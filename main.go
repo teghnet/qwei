@@ -15,6 +15,60 @@ import (
 	"github.com/teghnet/qwei/vars"
 )
 
+func main() {
+	ctx := context.Background()
+	ctx = ethereum.WithChainID(ctx, ethereum.MainnetChainID)
+
+	sourceAccount, err := ethereum.NewPrivateKeyAccount(vars.EthKeys[4])
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	ctx = ethereum.WithAccount(ctx, sourceAccount)
+
+	client := provider.NewAlchemy(vars.AlchemyKeys)
+	defer func() {
+		err := client.Close(ctx)
+		if err != nil {
+			log.Printf("error closing client: %s", err)
+		}
+	}()
+
+	destinationAccount, err := ethereum.NewPrivateKeyAccount(vars.EthKeys[1])
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	err = SweepEth(ctx, client, destinationAccount)
+	if err != nil {
+		log.Println(err)
+	}
+
+	wallet, err := ethereum.StdinHdWallet(0)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	wa := ethereum.NewWalletAccount(wallet, err)
+	for _, a := range vars.AddrBook {
+		acc, closeFn, err := wa(a, "")
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		if err := SweepEth(ethereum.WithAccount(ctx, acc), client, destinationAccount); err != nil {
+			log.Println(err)
+			continue
+		}
+		if err := closeFn(); err != nil {
+			log.Println(err)
+			continue
+		}
+	}
+}
+
 func SweepEth(ctx context.Context, c ethereum.Client, to ethereum.Account) error {
 	fmt.Println(etherscan.Account(ctx, to))
 	bal2, err := c.BalanceOf(ctx, utils.MustAddress(to.Address(ctx)))
@@ -37,18 +91,19 @@ func SweepEth(ctx context.Context, c ethereum.Client, to ethereum.Account) error
 	}
 	fmt.Printf("%24s %s\n", gasPrice.GWei(), "suggested")
 
-	gasCost := bn.IntFromInt64(ethereum.TransferGas).Mul(gasPrice.Wei())
+	gasLimit := uint64(ethereum.TransferGas)
+	gasCost := bn.IntFromUint64(gasLimit).Mul(gasPrice.Wei())
 	fmt.Printf("%24s %s\n", ethereum.Wei(gasCost).Wei(), "min bal")
 
-	gasPrice = ethereum.GWei(bn.FloatFromInt64(4))
+	gasPrice = ethereum.GWei(bn.FloatFromInt64(11))
 	feeEstimator = ethereum.NewStaticFee(gasPrice, gasPrice)
 	fmt.Printf("%24s %s\n", gasPrice.GWei(), "price")
 
-	gasCost = bn.IntFromInt64(ethereum.TransferGas).Mul(gasPrice.Wei())
+	gasCost = bn.IntFromUint64(gasLimit).Mul(gasPrice.Wei())
 	fmt.Printf("%24s %s\n", ethereum.Wei(gasCost).GWei(), "cost")
 
 	transferAmount := ethereum.Wei(bal.Wei().Sub(gasCost))
-	fmt.Printf("%24s %s\n", transferAmount.GWei(), "transfer")
+	fmt.Printf("%24s %s\n", transferAmount.Wei(), "transfer")
 
 	if transferAmount.Wei().Cmp(bn.IntFromInt64(0)) <= 0 {
 		return errors.New("not enough funds")
@@ -65,7 +120,7 @@ func SweepEth(ctx context.Context, c ethereum.Client, to ethereum.Account) error
 		txParams := ethereum.NewTXParams(
 			transferAmount,
 			nonce,
-			ethereum.GasLimit(ethereum.TransferGas),
+			nil,
 			feeEstimator,
 		)
 		hash, err := c.Transfer(ctx, utils.MustAddress(to.Address(ctx)), txParams)
@@ -75,36 +130,4 @@ func SweepEth(ctx context.Context, c ethereum.Client, to ethereum.Account) error
 		fmt.Println(etherscan.Txx(ctx, *hash))
 	}
 	return nil
-}
-
-func main() {
-	ctx := context.Background()
-	ctx = ethereum.WithChainID(ctx, ethereum.MainnetChainID)
-
-	sourceAccount, err := ethereum.NewPrivateKeyAccount(vars.EthKeys[4])
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	ctx = ethereum.WithAccount(ctx, sourceAccount)
-
-	client := provider.NewAlchemy(vars.AlchemyKeys)
-	defer func() {
-		err := client.Close(ctx)
-		if err != nil {
-			log.Printf("error closing client: %s", err)
-		}
-	}()
-
-	destinationAccount, err := ethereum.NewPrivateKeyAccount(vars.EthKeys[0])
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	err = SweepEth(ctx, client, destinationAccount)
-	if err != nil {
-		log.Println(err)
-		return
-	}
 }

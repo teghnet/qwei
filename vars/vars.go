@@ -16,3 +16,5 @@ var InfuraKeys []string
 var AlchemyKeys map[*big.Int]string
 var Address string
 var Pass string
+
+var AddrBook []string

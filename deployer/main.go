@@ -6,10 +6,10 @@ import (
 
 	"github.com/defiweb/go-offchain/catalog/create2"
 	"github.com/defiweb/go-offchain/ethereum"
+	"github.com/defiweb/go-offchain/ethereum/provider"
 	"github.com/defiweb/go-offchain/etherscan"
 	"github.com/defiweb/go-offchain/examples"
 	"github.com/defiweb/go-offchain/examples/utils"
-	"github.com/defiweb/go-offchain/infura"
 )
 
 func main() {
@@ -26,7 +26,7 @@ func main() {
 	}
 	log.Println("FROM:", etherscan.Address(chainID, address))
 	log.Println("-----")
-	client := infura.NewClient(examples.InfuraAPIKey)
+	client := provider.NewInfura(examples.InfuraAPIKey)
 
 	var txParams ethereum.TXParams
 	// txParams ,_:= ethereum.NewAutoTXParams(client, 0, 0, 0, ethereum.NewStaticFee(

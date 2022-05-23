@@ -33,6 +33,7 @@ func AddressList(ctx context.Context, client ethereum.Client, txParams ethereum.
 	}
 	return list
 }
+
 func GetFeedsFromOsm(contract common.Address) func(ctx context.Context, client ethereum.Client, txParams ethereum.TXParams) ethereum.AddressList {
 	return func(ctx context.Context, client ethereum.Client, txParams ethereum.TXParams) ethereum.AddressList {
 		medianAddr, err := osm.Src(contract).Read(ctx, client, txParams)

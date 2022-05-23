@@ -10,13 +10,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/defiweb/go-offchain/infura"
-
 	"github.com/defiweb/go-offchain/bn"
 	"github.com/defiweb/go-offchain/catalog/maker/com"
 	"github.com/defiweb/go-offchain/catalog/maker/median"
 	"github.com/defiweb/go-offchain/catalog/maker/osm"
 	"github.com/defiweb/go-offchain/ethereum"
+	"github.com/defiweb/go-offchain/ethereum/provider"
 	"github.com/defiweb/go-offchain/etherscan"
 	"github.com/defiweb/go-offchain/examples"
 	"github.com/defiweb/go-offchain/examples/utils"
@@ -48,7 +47,7 @@ func main() {
 		panic(err)
 	}
 	log.Println("from:", etherscan.Address(chainID, address))
-	client := infura.NewClient(examples.InfuraAPIKey)
+	client := provider.NewInfura(examples.InfuraAPIKey)
 
 	nonce := utils.MustUint64(client.PendingNonce(ctx, address))
 	log.Println("first nonce:", nonce)
