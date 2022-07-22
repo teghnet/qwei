@@ -4,86 +4,83 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math/big"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/defiweb/go-offchain/bn"
-	"github.com/defiweb/go-offchain/catalog/maker/changelog"
 	"github.com/defiweb/go-offchain/ethereum"
 	"github.com/defiweb/go-offchain/ethereum/abi"
 	"github.com/defiweb/go-offchain/ethereum/provider"
 	"github.com/teghnet/qwei/vars"
 )
 
+func Client(acc ethereum.Account) (context.Context, ethereum.Client, func()) {
+	ctx := context.Background()
+	ctx = ethereum.WithChainID(ctx, ethereum.GoerliChainID)
+	ctx = ethereum.WithAccount(ctx, acc)
+
+	client := provider.NewAlchemy(vars.AlchemyKeys)
+
+	return ctx, provider.NewAlchemy(vars.AlchemyKeys), func() {
+		if err := client.Close(ctx); err != nil {
+			log.Printf("error closing client: %s", err)
+		}
+	}
+}
+
 func main() {
-	sourceAccount, err := ethereum.NewPrivateKeyAccount(vars.EthKeys[4])
+	acc, err := ethereum.NewPrivateKeyAccount(vars.EthKeys[4])
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	ctx := context.Background()
-	ctx = ethereum.WithChainID(ctx, ethereum.GoerliChainID)
-	ctx = ethereum.WithAccount(ctx, sourceAccount)
+	ctx, client, closeFn := Client(acc)
+	defer closeFn()
 
-	client := provider.NewAlchemy(vars.AlchemyKeys)
-	defer func() {
-		if err := client.Close(ctx); err != nil {
-			log.Printf("error closing client: %s", err)
-		}
-	}()
-
+	i := new(bn.Int)
 	{
-		f, err := abi.MethodCall(
-			"0xdA0Ab1e0017DEbCd72Be8599041a2aa3bA7e740F",
-			"count()(uint256)",
-		)()
+		fn, err := abi.Parse("count()(uint256)")
 		if err != nil {
 			log.Println(err)
 			return
 		}
 
-		u, err := client.Read(ctx, f, nil)
+		mt := fn.Attach(common.HexToAddress("0xdA0Ab1e0017DEbCd72Be8599041a2aa3bA7e740F"))
+
+		c, err := mt()
 		if err != nil {
 			log.Println(err)
 			return
 		}
 
-		v, ok := u.([]interface{})
-		if !ok {
-			log.Printf("%#v", u)
+		if err := abi.ReadVars(ctx, client, nil)(c, i); err != nil {
+			log.Println(err)
 			return
 		}
-		fmt.Println(bn.IntFromBigInt(v[0].(*big.Int)).Int64())
 	}
 
-	{
-		fmt.Println(changelog.Get(1).Read(ctx, client, nil))
-	}
+	var s string
+	var a common.Address
 
 	{
-		f, err := abi.MethodCall(
-			"0xdA0Ab1e0017DEbCd72Be8599041a2aa3bA7e740F",
-			"get(uint256)(bytes32,address)",
-		)(big.NewInt(1))
+		fn, err := abi.Parse("get(uint256)(bytes32,address)")
 		if err != nil {
 			log.Println(err)
 			return
 		}
 
-		u, err := client.Read(ctx, f, nil)
+		mt := fn.Attach(common.HexToAddress("0xdA0Ab1e0017DEbCd72Be8599041a2aa3bA7e740F"))
+
+		c, err := mt(i.Sub(bn.IntFromInt64(1)).BigInt())
 		if err != nil {
 			log.Println(err)
 			return
 		}
 
-		v, ok := u.([]interface{})
-		if !ok {
-			log.Printf("non array %#v", u)
+		if err := abi.ReadVars(ctx, client, nil)(c, &s, &a); err != nil {
+			log.Println(err)
 			return
 		}
-		b := v[0].([32]byte)
-		fmt.Println(strings.Trim(string(b[:]), "\x00"), v[1].(common.Address).Hex())
 	}
+	fmt.Println(s, a)
 }
