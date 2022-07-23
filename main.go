@@ -48,52 +48,43 @@ func do(ctx context.Context, client ethereum.Client, params ethereum.TXParams) e
 		if err != nil {
 			return err
 		}
+		// TODO: Can we pass the result of this to the next functions within one call?
+		// What should the contract look like? Or how to connect all the pieces?
 	}
-	fmt.Println(count)
+	var callables []ethereum.Callable
 	var version string
 	{
 		c, err := getVersion(addr)
 		if err != nil {
 			return err
 		}
-		_, err = client.Read(ctx, c.Bind(&version), params)
-		if err != nil {
-			return err
-		}
+		callables = append(callables, c.Bind(&version))
 	}
-	fmt.Println(version)
 	var sum string
 	{
 		c, err := getSum(addr)
 		if err != nil {
 			return err
 		}
-		_, err = client.Read(ctx, c.Bind(&sum), params)
-		if err != nil {
-			return err
-		}
+		callables = append(callables, c.Bind(&sum))
 	}
-	fmt.Println(sum)
 	var ipfs string
 	{
 		c, err := getIPFS(addr)
 		if err != nil {
 			return err
 		}
-		_, err = client.Read(ctx, c.Bind(&ipfs), params)
-		if err != nil {
-			return err
-		}
+		callables = append(callables, c.Bind(&ipfs))
 	}
-	fmt.Println(ipfs)
 	{
 		cs, err := getItems(addr, count)
 		if err != nil {
 			return err
 		}
+		callables = append(callables, cs...)
 
 		read, err := multicall.Contract().
-			TryAggregate(false, cs...).
+			TryAggregate(false, callables...).
 			Read(ctx, client, params)
 		if err != nil {
 			return err
@@ -105,9 +96,13 @@ func do(ctx context.Context, client ethereum.Client, params ethereum.TXParams) e
 				fmt.Println(x.Result, i)
 				continue
 			}
-			fmt.Println(u[1], i, u[0])
+			fmt.Println(i, u, len(u))
 		}
 	}
+	fmt.Println("version:", version)
+	fmt.Println("count:", count)
+	fmt.Println("sum:", sum)
+	fmt.Println("ipfs:", ipfs)
 	return nil
 }
 
