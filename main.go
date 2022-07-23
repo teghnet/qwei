@@ -37,7 +37,7 @@ func main() {
 }
 
 func do(ctx context.Context, client ethereum.Client, params ethereum.TXParams) error {
-	addr := common.HexToAddress("0xdA0Ab1e0017DEbCd72Be8599041a2aa3bA7e740F")
+	addr := abi.Receiver(common.HexToAddress("0xdA0Ab1e0017DEbCd72Be8599041a2aa3bA7e740F"))
 	var count int
 	{
 		c, err := countItems(addr)
@@ -102,75 +102,58 @@ func do(ctx context.Context, client ethereum.Client, params ethereum.TXParams) e
 		for i, x := range read {
 			u, ok := x.Result.([]any)
 			if !ok {
-				fmt.Println(x.Result)
-				return fmt.Errorf("no array result at idx: %d", i)
+				fmt.Println(x.Result, i)
+				continue
 			}
-			fmt.Println(u[0], u[1])
+			fmt.Println(u[1], i, u[0])
 		}
 	}
 	return nil
 }
 
-func getIPFS(addr common.Address) (abi.CallableUnpacker, error) {
-	fn, err := abi.Parse("ipfs()(string)")
-	if err != nil {
-		return nil, err
-	}
-	c, err := fn.Attach(addr)()
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}
-func getVersion(addr common.Address) (abi.CallableUnpacker, error) {
-	fn, err := abi.Parse("version()(string)")
-	if err != nil {
-		return nil, err
-	}
-	c, err := fn.Attach(addr)()
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}
-func getSum(addr common.Address) (abi.CallableUnpacker, error) {
-	fn, err := abi.Parse("sha256sum()(string)")
-	if err != nil {
-		return nil, err
-	}
-	c, err := fn.Attach(addr)()
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}
-func countItems(addr common.Address) (abi.CallableUnpacker, error) {
-	fn, err := abi.Parse("count()(uint256)")
-	if err != nil {
-		return nil, err
-	}
-	c, err := fn.Attach(addr)()
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}
-
-func getItems(addr common.Address, count int) ([]ethereum.Callable, error) {
+func getItems(addr abi.Receiver, count int) ([]ethereum.Callable, error) {
 	var s string
-	var a common.Address
-	function, err := abi.Parse("get(uint256)(bytes32,address)")
+	method, err := addr.Parse("get(uint256)(bytes32,address)")
+	// TODO: we could try creating a set of default mappers
+	// method, err := addr.Parse("get(uint256)(bytes32=>string,address)")
 	if err != nil {
 		return nil, err
 	}
-	method := function.Attach(addr)
 	var cs []ethereum.Callable
 	for i := 0; i < count; i++ {
 		c, err := method(i)
 		if err != nil {
 			return nil, err
 		}
-		cs = append(cs, c.Bind(&s, &a))
+		cs = append(cs, c.Bind(&s))
 	}
 	return cs, nil
+}
+func getIPFS(addr abi.Receiver) (abi.CallableUnpacker, error) {
+	c, err := addr.Parse("ipfs()(string)")
+	if err != nil {
+		return nil, err
+	}
+	return c()
+}
+func getVersion(addr abi.Receiver) (abi.CallableUnpacker, error) {
+	c, err := addr.Parse("version()(string)")
+	if err != nil {
+		return nil, err
+	}
+	return c()
+}
+func getSum(addr abi.Receiver) (abi.CallableUnpacker, error) {
+	c, err := addr.Parse("sha256sum()(string)")
+	if err != nil {
+		return nil, err
+	}
+	return c()
+}
+func countItems(addr abi.Receiver) (abi.CallableUnpacker, error) {
+	c, err := addr.Parse("count()(uint256)")
+	if err != nil {
+		return nil, err
+	}
+	return c()
 }
