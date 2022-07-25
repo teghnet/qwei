@@ -37,7 +37,7 @@ func main() {
 }
 
 func do(ctx context.Context, client ethereum.Client, params ethereum.TXParams) error {
-	addr := abi.Receiver(common.HexToAddress("0xdA0Ab1e0017DEbCd72Be8599041a2aa3bA7e740F"))
+	addr := common.HexToAddress("0xdA0Ab1e0017DEbCd72Be8599041a2aa3bA7e740F")
 	var count int
 	{
 		c, err := countItems(addr)
@@ -106,9 +106,9 @@ func do(ctx context.Context, client ethereum.Client, params ethereum.TXParams) e
 	return nil
 }
 
-func getItems(addr abi.Receiver, count int) ([]ethereum.Callable, error) {
+func getItems(addr common.Address, count int) ([]ethereum.Callable, error) {
 	var s string
-	method, err := addr.Parse("get(uint256)(bytes32,address)")
+	method, err := abi.ParseWithAddr(addr, "get(uint256)(bytes32,address)")
 	// TODO: we could try creating a set of default mappers
 	// method, err := addr.Parse("get(uint256)(bytes32=>string,address)")
 	if err != nil {
@@ -124,29 +124,29 @@ func getItems(addr abi.Receiver, count int) ([]ethereum.Callable, error) {
 	}
 	return cs, nil
 }
-func getIPFS(addr abi.Receiver) (abi.CallableUnpacker, error) {
-	c, err := addr.Parse("ipfs()(string)")
+func getIPFS(addr common.Address) (abi.CallableUnpacker, error) {
+	c, err := abi.ParseWithAddr(addr, "ipfs()(string)")
 	if err != nil {
 		return nil, err
 	}
 	return c()
 }
-func getVersion(addr abi.Receiver) (abi.CallableUnpacker, error) {
-	c, err := addr.Parse("version()(string)")
+func getVersion(addr common.Address) (abi.CallableUnpacker, error) {
+	c, err := abi.ParseWithAddr(addr, "version()(string)")
 	if err != nil {
 		return nil, err
 	}
 	return c()
 }
-func getSum(addr abi.Receiver) (abi.CallableUnpacker, error) {
-	c, err := addr.Parse("sha256sum()(string)")
+func getSum(addr common.Address) (abi.CallableUnpacker, error) {
+	c, err := abi.ParseWithAddr(addr, "sha256sum()(string)")
 	if err != nil {
 		return nil, err
 	}
 	return c()
 }
-func countItems(addr abi.Receiver) (abi.CallableUnpacker, error) {
-	c, err := addr.Parse("count()(uint256)")
+func countItems(addr common.Address) (abi.CallableUnpacker, error) {
+	c, err := abi.ParseWithAddr(addr, "count()(uint256)")
 	if err != nil {
 		return nil, err
 	}
