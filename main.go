@@ -91,26 +91,6 @@ func do(ctx context.Context, client ethereum.Client, params ethereum.TXParams) e
 			return err
 		}
 
-		// var fn abi.ValModFn = func(arg any) (any, error) {
-		// 	var ret []any
-		// 	for i, r := range arg.([]struct {
-		// 		Name0 bool    `json:"name0"`
-		// 		Name1 []uint8 `json:"name1"`
-		// 	}) {
-		// 		if cr, ok := callables[i].(ethereum.Unpacker); ok {
-		// 			if unpacked, err := cr.Unpack(r.Name1); err != nil {
-		// 				log.Printf("unable to unpack %d: %s", i, err)
-		// 			} else {
-		// 				fmt.Println(i, unpacked)
-		// 				ret = append(ret, unpacked)
-		// 			}
-		// 		} else {
-		// 			fmt.Println(i, r)
-		// 			ret = append(ret, r)
-		// 		}
-		// 	}
-		// 	return ret, nil
-		// }
 		var fn abi.ValFn = func(arg any) error {
 			for i, r := range arg.([]struct {
 				Name0 bool    `json:"name0"`
