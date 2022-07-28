@@ -92,10 +92,14 @@ func do(ctx context.Context, client ethereum.Client, params ethereum.TXParams) e
 		}
 
 		var fn callable.ValFn = func(arg any) error {
-			for i, r := range arg.([]struct {
+			rets, ok := arg.([]struct {
 				Name0 bool    `json:"name0"`
 				Name1 []uint8 `json:"name1"`
-			}) {
+			})
+			if !ok {
+				return fmt.Errorf("type assertion failed to match %T", arg)
+			}
+			for i, r := range rets {
 				if cr, ok := callables[i].(ethereum.Unpacker); ok {
 					if unpacked, err := cr.Unpack(r.Name1); err != nil {
 						log.Printf("unable to unpack %d: %s", i, err)
