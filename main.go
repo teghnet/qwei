@@ -9,7 +9,7 @@ import (
 
 	"github.com/defiweb/go-offchain/catalog/multicall"
 	"github.com/defiweb/go-offchain/ethereum"
-	"github.com/defiweb/go-offchain/ethereum/abi"
+	"github.com/defiweb/go-offchain/ethereum/callable"
 	"github.com/defiweb/go-offchain/ethereum/provider"
 	"github.com/teghnet/qwei/vars"
 )
@@ -81,7 +81,7 @@ func do(ctx context.Context, client ethereum.Client, params ethereum.TXParams) e
 		}
 		callables = append(callables, cs...)
 
-		parsed, err := abi.Parse("tryAggregate(bool,(address,bytes)[])((bool,bytes)[])")
+		parsed, err := callable.ParseFunction("tryAggregate(bool,(address,bytes)[])((bool,bytes)[])")
 		if err != nil {
 			return err
 		}
@@ -91,7 +91,7 @@ func do(ctx context.Context, client ethereum.Client, params ethereum.TXParams) e
 			return err
 		}
 
-		var fn abi.ValFn = func(arg any) error {
+		var fn callable.ValFn = func(arg any) error {
 			for i, r := range arg.([]struct {
 				Name0 bool    `json:"name0"`
 				Name1 []uint8 `json:"name1"`
@@ -121,7 +121,7 @@ func do(ctx context.Context, client ethereum.Client, params ethereum.TXParams) e
 }
 
 func getItems(addr common.Address, count int) ([]ethereum.Callable, error) {
-	method, err := abi.ParseWithAddr(addr, "get(uint256)(bytes32,address)")
+	method, err := callable.ParseMethod(addr, "get(uint256)(bytes32,address)")
 	// TODO: we could try creating a set of default mappers
 	// method, err := addr.Parse("get(uint256)(bytes32=>string,address)")
 	if err != nil {
@@ -138,29 +138,29 @@ func getItems(addr common.Address, count int) ([]ethereum.Callable, error) {
 	}
 	return cs, nil
 }
-func getIPFS(addr common.Address) (abi.CallableUnpacker, error) {
-	c, err := abi.ParseWithAddr(addr, "ipfs()(string)")
+func getIPFS(addr common.Address) (callable.CallableUnpacker, error) {
+	c, err := callable.ParseMethod(addr, "ipfs()(string)")
 	if err != nil {
 		return nil, err
 	}
 	return c()
 }
-func getVersion(addr common.Address) (abi.CallableUnpacker, error) {
-	c, err := abi.ParseWithAddr(addr, "version()(string)")
+func getVersion(addr common.Address) (callable.CallableUnpacker, error) {
+	c, err := callable.ParseMethod(addr, "version()(string)")
 	if err != nil {
 		return nil, err
 	}
 	return c()
 }
-func getSum(addr common.Address) (abi.CallableUnpacker, error) {
-	c, err := abi.ParseWithAddr(addr, "sha256sum()(string)")
+func getSum(addr common.Address) (callable.CallableUnpacker, error) {
+	c, err := callable.ParseMethod(addr, "sha256sum()(string)")
 	if err != nil {
 		return nil, err
 	}
 	return c()
 }
-func countItems(addr common.Address) (abi.CallableUnpacker, error) {
-	c, err := abi.ParseWithAddr(addr, "count()(uint256)")
+func countItems(addr common.Address) (callable.CallableUnpacker, error) {
+	c, err := callable.ParseMethod(addr, "count()(uint256)")
 	if err != nil {
 		return nil, err
 	}
