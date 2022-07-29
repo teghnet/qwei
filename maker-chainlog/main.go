@@ -14,28 +14,6 @@ import (
 	"github.com/teghnet/qwei/vars"
 )
 
-func main() {
-	account, err := ethereum.NewPrivateKeyAccount(vars.EthKeys[4])
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	ctx := context.Background()
-	ctx = ethereum.WithChainID(ctx, ethereum.MainnetChainID)
-	ctx = ethereum.WithAccount(ctx, account)
-
-	client := provider.NewAlchemy(vars.AlchemyKeys)
-	defer func() {
-		if err := client.Close(ctx); err != nil {
-			log.Printf("error closing client: %s", err)
-		}
-	}()
-
-	if err := do(ctx, client, nil); err != nil {
-		log.Fatalln(err)
-	}
-}
-
 func do(ctx context.Context, client ethereum.Client, params ethereum.TXParams) error {
 	addr := common.HexToAddress("0xdA0Ab1e0017DEbCd72Be8599041a2aa3bA7e740F")
 	var count int
@@ -124,6 +102,28 @@ func do(ctx context.Context, client ethereum.Client, params ethereum.TXParams) e
 	return nil
 }
 
+func main() {
+	account, err := ethereum.NewPrivateKeyAccount(vars.DefaultEthKey)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	ctx := context.Background()
+	ctx = ethereum.WithChainID(ctx, ethereum.MainnetChainID)
+	ctx = ethereum.WithAccount(ctx, account)
+
+	client := provider.NewAlchemy(vars.AlchemyKeys)
+	defer func() {
+		if err := client.Close(ctx); err != nil {
+			log.Printf("error closing client: %s", err)
+		}
+	}()
+
+	if err := do(ctx, client, nil); err != nil {
+		log.Fatalln(err)
+	}
+}
+
 func getItems(addr common.Address, count int) ([]ethereum.Callable, error) {
 	method, err := callable.ParseMethod(addr, "get(uint256)(bytes32,address)")
 	// TODO: we could try creating a set of default mappers
@@ -142,28 +142,28 @@ func getItems(addr common.Address, count int) ([]ethereum.Callable, error) {
 	}
 	return cs, nil
 }
-func getIPFS(addr common.Address) (callable.CallableUnpacker, error) {
+func getIPFS(addr common.Address) (callable.Unpacker, error) {
 	c, err := callable.ParseMethod(addr, "ipfs()(string)")
 	if err != nil {
 		return nil, err
 	}
 	return c()
 }
-func getVersion(addr common.Address) (callable.CallableUnpacker, error) {
+func getVersion(addr common.Address) (callable.Unpacker, error) {
 	c, err := callable.ParseMethod(addr, "version()(string)")
 	if err != nil {
 		return nil, err
 	}
 	return c()
 }
-func getSum(addr common.Address) (callable.CallableUnpacker, error) {
+func getSum(addr common.Address) (callable.Unpacker, error) {
 	c, err := callable.ParseMethod(addr, "sha256sum()(string)")
 	if err != nil {
 		return nil, err
 	}
 	return c()
 }
-func countItems(addr common.Address) (callable.CallableUnpacker, error) {
+func countItems(addr common.Address) (callable.Unpacker, error) {
 	c, err := callable.ParseMethod(addr, "count()(uint256)")
 	if err != nil {
 		return nil, err
